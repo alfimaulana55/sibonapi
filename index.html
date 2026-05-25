@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Bon Tahanan</title>
+    <title>Sistem Informasi Pengeluaran Bon Narapidana</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -42,7 +42,7 @@
             font-weight: bold;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 20px auto;
             padding: 0 20px;
         }
@@ -140,7 +140,6 @@
 </head>
 <body>
 
-    <!-- HALAMAN LOGIN -->
     <div id="loginPage">
         <div class="login-box">
             <h2>Login Staff UPT</h2>
@@ -152,7 +151,6 @@
         </div>
     </div>
 
-    <!-- MAIN APP WRAPPER -->
     <div id="mainApp" class="hidden">
 
         <div class="simulator-nav">
@@ -163,7 +161,7 @@
         </div>
 
         <div class="header">
-            <h2>Sistem Pengeluaran/Bon Tahanan</h2>
+            <h2>Sistem Informasi Pengeluaran Bon Narapidana</h2>
             <div>
                 <span id="userInfo">Login: -</span> 
                 <button class="btn-logout" onclick="logout()">Logout</button> | 
@@ -173,10 +171,8 @@
 
         <div class="container">
             
-            <!-- DATABASE UNTUK SEARCH AUTOCOMPLETE -->
             <datalist id="listDataNapi"></datalist>
 
-            <!-- Form Request: Hanya untuk Staff -->
             <div class="card" id="formRequestDiv">
                 <h3>Buat Bon (Request) Baru</h3>
                 
@@ -197,41 +193,42 @@
                 <button class="btn-submit" onclick="buatRequest()">Kirim Bon</button>
             </div>
 
-            <!-- Tabel Aktif -->
             <div class="card">
-                <h3>Daftar Tahanan Keluar & Antrean ACC</h3>
+                <h3>Daftar Bon Narapidana Keluar</h3>
                 <table id="tableAktif">
                     <thead>
                         <tr>
                             <th width="3%">No</th>
-                            <th width="15%">Nama Narapidana</th>
+                            <th width="12%">Tanggal Pukul</th>
+                            <th width="14%">Nama Narapidana</th>
                             <th width="10%">Pemohon</th>
                             <th width="12%">Keperluan</th>
-                            <th width="12%">Waktu Request</th>
                             <th width="5%">Shift</th>
-                            <th width="15%">Persetujuan (Karupam)</th>
-                            <th width="12%">Mengetahui (KPLP)</th>
-                            <th width="16%">Aksi</th>
+                            <th width="16%">Persetujuan (Karupam)</th>
+                            <th width="15%">Mengetahui (KPLP)</th>
+                            <th width="13%">Aksi</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
 
-            <!-- Tabel History -->
             <div class="card">
-                <h3>Riwayat Bon (History)</h3>
+                <h3>Riwayat Bon Narapidana keluar</h3>
                 <table id="tableHistory">
                     <thead>
                         <tr>
                             <th width="3%">No</th>
-                            <th width="15%">Waktu Request</th>
-                            <th width="12%">Pemohon</th>
-                            <th width="15%">Nama Narapidana</th>
-                            <th width="15%">Keperluan</th>
-                            <th width="15%">Waktu Keluar</th>
-                            <th width="15%">Waktu Kembali</th>
-                            <th width="10%">Status Akhir</th>
+                            <th width="10%">Tanggal Pukul</th>
+                            <th width="12%">Nama Narapidana</th>
+                            <th width="9%">Pemohon</th>
+                            <th width="11%">Keperluan</th>
+                            <th width="5%">Shift</th>
+                            <th width="14%">Persetujuan (Karupam)</th>
+                            <th width="12%">Mengetahui (KPLP)</th>
+                            <th width="8%">Waktu Keluar</th>
+                            <th width="8%">Waktu Kembali</th>
+                            <th width="8%">Status Akhir</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -241,7 +238,6 @@
         </div>
     </div>
 
-    <!-- MODAL OTENTIKASI KARUPAM -->
     <div class="modal-overlay" id="modalKarupam">
         <div class="modal-box">
             <h3>Otentikasi Karupam</h3>
@@ -266,7 +262,6 @@
         </div>
     </div>
 
-    <!-- MODAL OTENTIKASI KPLP -->
     <div class="modal-overlay" id="modalKPLP">
         <div class="modal-box">
             <h3>Otentikasi KPLP</h3>
@@ -445,6 +440,7 @@
                     namaKarupam: null,
                     waktuKeluar: null,
                     accKPLP: false,
+                    waktuMengetahui: null, // Tambahan untuk mencatat jam acc KPLP
                     waktuKembali: null,
                     status: 'Antrean'
                 };
@@ -507,6 +503,7 @@
                 const req = requests.find(r => r.id === currentActionId);
                 if(req) {
                     req.accKPLP = true;
+                    req.waktuMengetahui = new Date().toISOString(); // Mencatat jam KPLP klik Mengetahui
                     saveData();
                     renderTables();
                     closeModal('modalKPLP');
@@ -548,13 +545,12 @@
 
             requests.slice().reverse().forEach(req => {
                 
-                // Format Penulisan Jam Persetujuan Karupam (Sesuai Permintaan)
                 let labelKarupam = req.accKarupam 
-                    ? `<span class="badge bg-accent">Dikeluarkan</span><br><small style="display:inline-block; margin-top:5px; color:#555; line-height:1.4;">Oleh <b>${req.namaKarupam}</b> pada<br>${formatDetailTime(req.waktuKeluar, true)}</small>` 
+                    ? `<span class="badge bg-accent">Dikeluarkan</span><br><small style="display:inline-block; margin-top:5px; color:#555; line-height:1.4;">Dikeluarkan oleh: <b>${req.namaKarupam}</b> pada<br>${formatDetailTime(req.waktuKeluar, true)}</small>` 
                     : `<span class="badge bg-warning">Menunggu ACC</span>`;
                 
                 let labelKPLP = req.accKPLP 
-                    ? `<span class="badge bg-success">Mengetahui</span>` 
+                    ? `<span class="badge bg-success">Mengetahui</span><br><small style="display:inline-block; margin-top:5px; color:#555; line-height:1.4;">Diketahui pada pukul<br>${formatDetailTime(req.waktuMengetahui, true)}</small>` 
                     : `<span class="badge bg-warning">Belum Dicek</span>`;
 
                 let btnAksi = '';
@@ -593,27 +589,31 @@
 
                 if (btnAksi === '') btnAksi = '-';
 
+                // Kolom untuk History
                 const rowHtml = `
                     <tr>
                         <td>${noHistory}</td>
                         <td>${formatDetailTime(req.waktuRequest)}</td>
-                        <td>${req.namaStaff}</td>
                         <td>${req.napi}</td>
+                        <td>${req.namaStaff}</td>
                         <td>${req.keperluan}</td>
+                        <td>${req.shift}</td>
+                        <td>${labelKarupam}</td>
+                        <td>${labelKPLP}</td>
                         <td>${formatDetailTime(req.waktuKeluar)}</td>
                         <td>${formatDetailTime(req.waktuKembali)}</td>
-                        <td><span class="badge bg-success">Kembali</span></td>
+                        <td><span class="badge bg-success">Sudah kembali kedalam Blok</span></td>
                     </tr>
                 `;
 
-                // Urutan Kolom Baru
+                // Kolom untuk Aktif
                 const rowAktifHtml = `
                     <tr>
                         <td>${noAktif}</td>
+                        <td>${formatDetailTime(req.waktuRequest)}</td>
                         <td>${req.napi}</td>
                         <td>${req.namaStaff}</td>
                         <td>${req.keperluan}</td>
-                        <td>${formatDetailTime(req.waktuRequest)}</td>
                         <td>${req.shift}</td>
                         <td>${labelKarupam}</td>
                         <td>${labelKPLP}</td>
