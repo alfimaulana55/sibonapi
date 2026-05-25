@@ -42,7 +42,7 @@
             font-weight: bold;
         }
         .container {
-            max-width: 1350px; /* Diperlebar sedikit karena kolom tabel bertambah */
+            max-width: 1350px;
             margin: 20px auto;
             padding: 0 20px;
         }
@@ -250,15 +250,23 @@
         <div class="modal-box">
             <h3>Otentikasi Karupam</h3>
             <p style="font-size: 13px; color: gray;">Masukkan identitas untuk ACC gerbang.</p>
+            
             <div class="form-group">
                 <label>Pilih Nama Karupam:</label>
-                <select id="selectNamaKarupam">
+                <select id="selectNamaKarupam" onchange="toggleCustomKarupam()">
                     <option value="Aji">1. Aji</option>
                     <option value="Badru">2. Badru</option>
                     <option value="Cece">3. Cece</option>
                     <option value="Dadang">4. Dadang</option>
+                    <option value="Pengganti">5. Karupam Pengganti</option>
                 </select>
             </div>
+
+            <div class="form-group hidden" id="divCustomKarupam">
+                <label>Ketik Nama Pengganti:</label>
+                <input type="text" id="inputNamaCustomKarupam" placeholder="Contoh: Bripka Toni">
+            </div>
+
             <div class="form-group">
                 <label>Password:</label>
                 <input type="password" id="inputPwKarupam" placeholder="Masukkan password">
@@ -285,7 +293,6 @@
     </div>
 
     <script>
-        // Data Napi Dummy
         const daftarNapi = [
             "Ahmad (Blok A1)", "Budi (Blok A2)", "Cecep (Blok A3)", "Dedi (Blok B1)", 
             "Eko (Blok B2)", "Fajar (Blok B3)", "Gilang (Blok A16)", "Hadi (Blok B16)",
@@ -313,7 +320,6 @@
             return 'Malam';
         }
 
-        // FORMAT WAKTU: Fungsi untuk memisahkan tanggal dan jam di tabel
         function getJustDate(dateString) {
             if(!dateString) return '-';
             const d = new Date(dateString);
@@ -331,7 +337,6 @@
             return `${jam}:${menit}`;
         }
 
-        // Untuk teks status approval yang digabung (Dikeluarkan pada Senin, 12/03/2026 14:00)
         function formatDetailTime(dateString, inline = false) {
             if(!dateString) return '-';
             const d = new Date(dateString);
@@ -358,7 +363,6 @@
             }
         }
 
-        // Fungsi memperbarui angka nomor urut di sebelah form input nama
         function updateNapiRowNumbers() {
             const rows = document.querySelectorAll('.napi-row .napi-number');
             rows.forEach((span, index) => {
@@ -499,30 +503,67 @@
             renderTables();
         }
 
+        function toggleCustomKarupam() {
+            const selectVal = document.getElementById('selectNamaKarupam').value;
+            const divCustom = document.getElementById('divCustomKarupam');
+            
+            if (selectVal === 'Pengganti') {
+                divCustom.classList.remove('hidden');
+            } else {
+                divCustom.classList.add('hidden');
+            }
+        }
+
         function openModalKarupam(id) {
             currentActionId = id;
             document.getElementById('inputPwKarupam').value = '';
+            document.getElementById('selectNamaKarupam').value = 'Aji';
+            document.getElementById('inputNamaCustomKarupam').value = '';
+            document.getElementById('divCustomKarupam').classList.add('hidden');
             document.getElementById('modalKarupam').style.display = 'flex';
         }
+
         function openModalKPLP(id) {
             currentActionId = id;
             document.getElementById('inputPwKPLP').value = '';
             document.getElementById('modalKPLP').style.display = 'flex';
         }
+
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
             currentActionId = null;
         }
 
         function submitKarupam() {
-            const namaTerpilih = document.getElementById('selectNamaKarupam').value;
+            const opsiTerpilih = document.getElementById('selectNamaKarupam').value;
             const pwInput = document.getElementById('inputPwKarupam').value;
+            
+            let namaValidFinal = "";
+            let isOtentikasiSukses = false;
 
-            if (authKarupam[namaTerpilih] === pwInput) {
+            if (opsiTerpilih === 'Pengganti') {
+                const namaCustom = document.getElementById('inputNamaCustomKarupam').value.trim();
+                if (!namaCustom) {
+                    alert("Nama Karupam Pengganti tidak boleh kosong!");
+                    return;
+                }
+                if (pwInput === "1") {
+                    isOtentikasiSukses = true;
+                    namaValidFinal = namaCustom + " (Pengganti)";
+                }
+            } 
+            else {
+                if (authKarupam[opsiTerpilih] === pwInput) {
+                    isOtentikasiSukses = true;
+                    namaValidFinal = opsiTerpilih;
+                }
+            }
+
+            if (isOtentikasiSukses) {
                 const req = requests.find(r => r.id === currentActionId);
                 if(req) {
                     req.accKarupam = true;
-                    req.namaKarupam = namaTerpilih;
+                    req.namaKarupam = namaValidFinal;
                     req.status = 'Sedang Keluar';
                     req.waktuKeluar = new Date().toISOString();
                     saveData();
@@ -530,7 +571,7 @@
                     closeModal('modalKarupam');
                 }
             } else {
-                alert("Password Salah untuk Karupam " + namaTerpilih + "!");
+                alert("Password Salah!");
             }
         }
 
@@ -609,14 +650,17 @@
                     else if (currentRole === 'Karupam') {
                         if (!req.accKarupam) {
                             btnAksi += `<button class="btn-action bg-accent" onclick="openModalKarupam(${req.id})">ACC Keluar</button>`;
-                        } 
-                        if (req.status === 'Sedang Keluar') {
+                            btnAksi += `<button class="btn-action bg-dark" onclick="hapusRequest(${req.id})">Hapus/Batal</button>`;
+                        } else if (req.status === 'Sedang Keluar') {
                             btnAksi += `<button class="btn-action bg-danger" onclick="kembalikanTahanan(${req.id})">Kembalikan Narapidana ke Sel</button>`;
                         }
                     } 
                     else if (currentRole === 'KPLP') {
                         if (!req.accKPLP) {
                             btnAksi += `<button class="btn-action bg-success" onclick="openModalKPLP(${req.id})">Mengetahui</button>`;
+                        }
+                        if (!req.accKarupam) {
+                            btnAksi += `<button class="btn-action bg-dark" onclick="hapusRequest(${req.id})">Hapus/Batal</button>`;
                         }
                         if (req.accKarupam && req.status === 'Sedang Keluar') {
                             btnAksi += `<button class="btn-action bg-danger" onclick="kembalikanTahanan(${req.id})">Kembalikan Narapidana ke Sel</button>`;
@@ -626,7 +670,6 @@
 
                 if (btnAksi === '') btnAksi = '-';
 
-                // Kolom untuk History (Pemisahan Tanggal & Pukul)
                 const rowHtml = `
                     <tr style="text-align: center;">
                         <td>${noHistory}</td>
@@ -646,7 +689,6 @@
                     </tr>
                 `;
 
-                // Kolom untuk Aktif (Pemisahan Tanggal & Pukul)
                 const rowAktifHtml = `
                     <tr style="text-align: center;">
                         <td>${noAktif}</td>
