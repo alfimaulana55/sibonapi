@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Pengeluaran Bon Narapidana</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .simulator-nav {
+            background-color: var(--warning);
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .simulator-nav button {
+            margin: 0 5px;
+            padding: 5px 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .container {
+            max-width: 1350px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        /* FORM STYLES */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; }
+        .form-group select, .form-group input {
+            width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box;
+        }
+        .auth-box {
+            background-color: #e8f4f8; padding: 15px; border-radius: 6px; border-left: 4px solid var(--accent); margin-bottom: 20px;
+        }
+        .auth-box input { margin-bottom: 0; }
+        
+        /* DYNAMIC NAPI ROW STYLES */
+        .napi-row {
+            display: flex; gap: 10px; margin-bottom: 10px; align-items: center;
+        }
+        .napi-number {
+            font-weight: bold; width: 25px; text-align: right; flex-shrink: 0; color: var(--secondary); font-size: 15px;
+        }
+        .napi-row input { flex: 1; }
+        .btn-remove-napi {
+            background-color: var(--danger); color: white; border: none; width: 38px; height: 38px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px;
+            display: flex; justify-content: center; align-items: center; flex-shrink: 0;
+        }
+        .btn-add-napi {
+            background-color: #ecf0f1; color: var(--dark); border: 1px dashed #bdc3c7; padding: 10px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 15px;
+        }
+        .btn-add-napi:hover { background-color: #e0e6ed; }
+
+        button.btn-submit {
+            background-color: var(--accent); color: white; border: none; padding: 12px 20px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px;
+        }
+        
+        /* TABLE STYLES */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        table, th, td { border: 1px solid #bdc3c7; }
+        th, td { padding: 8px; text-align: left; vertical-align: middle; }
+        th { background-color: var(--secondary); color: white; text-align: center;}
+        .badge {
+            padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white;
+            display: inline-block; margin-top: 4px; line-height: 1.4;
+        }
+        .bg-warning { background-color: var(--warning); color: black; }
+        .bg-accent { background-color: var(--accent); }
+        .bg-success { background-color: var(--success); }
+        .bg-danger { background-color: var(--danger); }
+        .bg-dark { background-color: #7f8c8d; }
+        .btn-action {
+            padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; margin: 2px; font-size: 12px; display: block; width: 100%; text-align: center; box-sizing: border-box;
+        }
+        .hidden { display: none !important; }
+
+        /* MODAL STYLES */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-box {
+            background: white; padding: 20px; border-radius: 8px; width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .modal-box h3 { margin-top: 0; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+        .btn-cancel { background-color: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-confirm { background-color: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="mainApp">
+
+        <div class="simulator-nav">
+            Pilih Peran: 
+            <button onclick="setRole('Pemohon')">Pemohon</button>
+            <button onclick="setRole('Karupam')">Karupam</button>
+            <button onclick="setRole('KPLP')">KPLP</button>
+        </div>
+
+        <div class="header">
+            <h2>Sistem Informasi Pengeluaran Bon Narapidana</h2>
+            <div>
+                <span id="userInfo">Mode: Dashboard Pemohon</span> | 
+                <span id="shiftInfo">Shift: Pagi</span>
+            </div>
+        </div>
+
+        <div class="container">
+            
+            <datalist id="listDataNapi"></datalist>
+
+            <div class="card" id="formRequestDiv">
+                <h3>Buat Bon (Request) Baru</h3>
+                
+                <div class="auth-box">
+                    <label style="margin-bottom: 10px;">Otentikasi Pemohon:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="reqUsername" placeholder="Username (wisnu / sidik)" required>
+                        <input type="password" id="reqPassword" placeholder="Password (1)" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ketik & Pilih Tahanan:</label>
+                    <div id="napiContainer">
+                        <div class="napi-row">
+                            <span class="napi-number">1.</span>
+                            <input type="text" list="listDataNapi" class="select-napi" placeholder="Ketik atau pilih nama tahanan...">
+                        </div>
+                    </div>
+                    <button class="btn-add-napi" onclick="addNapiRow()">+ Tambah Tahanan</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Keperluan / Tujuan:</label>
+                    <input type="text" id="inputKeperluan" placeholder="Contoh: Sidang, Kebersihan Blok, dll" required>
+                </div>
+                <button class="btn-submit" onclick="buatRequest()">Kirim Bon</button>
+            </div>
+
+            <div class="card">
+                <h3>Daftar Bon Narapidana Keluar</h3>
+                <table id="tableAktif">
+                    <thead>
+                        <tr>
+                            <th width="3%">No</th>
+                            <th width="7%">Tanggal</th>
+                            <th width="5%">Pukul</th>
+                            <th width="14%">Nama Narapidana</th>
+                            <th width="9%">Pemohon</th>
+                            <th width="11%">Keperluan</th>
+                            <th width="5%">Shift</th>
+                            <th width="16%">Persetujuan (Karupam)</th>
+                            <th width="15%">Mengetahui (KPLP)</th>
+                            <th width="15%">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Riwayat Bon Narapidana keluar</h3>
+                <table id="tableHistory">
+                    <thead>
+                        <tr>
+                            <th width="3%">No</th>
+                            <th width="6%">Tanggal</th>
+                            <th width="4%">Pukul</th>
+                            <th width="11%">Nama Narapidana</th>
+                            <th width="8%">Pemohon</th>
+                            <th width="10%">Keperluan</th>
+                            <th width="4%">Shift</th>
+                            <th width="12%">Persetujuan (Karupam)</th>
+                            <th width="12%">Mengetahui (KPLP)</th>
+                            <th width="6%">Tgl Keluar</th>
+                            <th width="4%">Jam Keluar</th>
+                            <th width="6%">Tgl Kembali</th>
+                            <th width="4%">Jam Kembali</th>
+                            <th width="10%">Status Akhir</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalPemohonAction">
+        <div class="modal-box">
+            <h3 id="pemohonActionTitle">Otentikasi Pemohon</h3>
+            <p style="font-size: 13px; color: gray;">Masukkan identitas pemohon bon ini.</p>
+            <div class="form-group">
+                <label>Username Pemohon:</label>
+                <input type="text" id="actionPemohonUser" placeholder="Username">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="actionPemohonPass" placeholder="Password">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('modalPemohonAction')">Batal</button>
+                <button class="btn-confirm" onclick="submitPemohonAction()">Verifikasi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalKarupam">
+        <div class="modal-box">
+            <h3>Otentikasi Karupam</h3>
+            <p style="font-size: 13px; color: gray;">Masukkan identitas untuk ACC gerbang.</p>
+            
+            <div class="form-group">
+                <label>Pilih Nama Karupam:</label>
+                <select id="selectNamaKarupam" onchange="toggleCustomKarupam()">
+                    <option value="Aji">1. Aji</option>
+                    <option value="Badru">2. Badru</option>
+                    <option value="Cece">3. Cece</option>
+                    <option value="Dadang">4. Dadang</option>
+                    <option value="Pengganti">5. Karupam Pengganti</option>
+                </select>
+            </div>
+
+            <div class="form-group hidden" id="divCustomKarupam">
+                <label>Ketik Nama Pengganti:</label>
+                <input type="text" id="inputNamaCustomKarupam" placeholder="Contoh: Bripka Toni">
+            </div>
+
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="inputPwKarupam" placeholder="Masukkan password">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('modalKarupam')">Batal</button>
+                <button class="btn-confirm" onclick="submitKarupam()">Verifikasi & ACC</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalKPLP">
+        <div class="modal-box">
+            <h3>Otentikasi KPLP</h3>
+            <div class="form-group">
+                <label>Password KPLP:</label>
+                <input type="password" id="inputPwKPLP" placeholder="Masukkan password KPLP">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('modalKPLP')">Batal</button>
+                <button class="btn-confirm" onclick="submitKPLP()">Verifikasi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const daftarNapi = [
+            "Ahmad (Blok A1)", "Budi (Blok A2)", "Cecep (Blok A3)", "Dedi (Blok B1)", 
+            "Eko (Blok B2)", "Fajar (Blok B3)", "Gilang (Blok A16)", "Hadi (Blok B16)",
+            "Iqbal (Blok A4)", "Joko (Blok A5)", "Kamal (Blok B4)", "Lutfi (Blok B5)"
+        ];
+
+        let napiOptionsHTML = '';
+        daftarNapi.forEach(napi => {
+            napiOptionsHTML += `<option value="${napi}">`;
+        });
+
+        const authStaff = { "wisnu": "1", "sidik": "1" };
+        const authKarupam = { "Aji": "r1", "Badru": "r2", "Cece": "r3", "Dadang": "r4" };
+        const authKPLP = "kp";
+
+        let currentRole = 'Pemohon';
+        let requests = JSON.parse(localStorage.getItem('dataRequests')) || [];
+        let currentActionId = null;
+        let pemohonActionType = ''; // 'hapus' atau 'kembali'
+
+        function getShift() {
+            const hour = new Date().getHours();
+            if (hour >= 7 && hour < 12) return 'Pagi';
+            if (hour >= 12 && hour < 17) return 'Siang';
+            return 'Malam';
+        }
+
+        function getJustDate(dateString) {
+            if(!dateString) return '-';
+            const d = new Date(dateString);
+            const tanggal = d.getDate().toString().padStart(2, '0');
+            const bulan = (d.getMonth() + 1).toString().padStart(2, '0');
+            const tahun = d.getFullYear();
+            return `${tanggal}/${bulan}/${tahun}`;
+        }
+
+        function getJustTime(dateString) {
+            if(!dateString) return '-';
+            const d = new Date(dateString);
+            const jam = d.getHours().toString().padStart(2, '0');
+            const menit = d.getMinutes().toString().padStart(2, '0');
+            return `${jam}:${menit}`;
+        }
+
+        function formatDetailTime(dateString, inline = false) {
+            if(!dateString) return '-';
+            const d = new Date(dateString);
+            const hariArr = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const namaHari = hariArr[d.getDay()];
+            const tanggal = d.getDate().toString().padStart(2, '0');
+            const bulan = (d.getMonth() + 1).toString().padStart(2, '0');
+            const tahun = d.getFullYear();
+            const jam = d.getHours().toString().padStart(2, '0');
+            const menit = d.getMinutes().toString().padStart(2, '0');
+            
+            if(inline) {
+                return `${namaHari}, ${tanggal}/${bulan}/${tahun} ${jam}:${menit}`;
+            }
+            return `${namaHari},<br>${tanggal}/${bulan}/${tahun} ${jam}:${menit}`;
+        }
+
+        function init() {
+            document.getElementById('listDataNapi').innerHTML = napiOptionsHTML;
+            document.getElementById('shiftInfo').innerText = 'Shift: ' + getShift();
+            setRole('Pemohon');
+        }
+
+        function updateNapiRowNumbers() {
+            const rows = document.querySelectorAll('.napi-row .napi-number');
+            rows.forEach((span, index) => {
+                span.innerText = (index + 1) + '.';
+            });
+        }
+
+        function addNapiRow() {
+            const container = document.getElementById('napiContainer');
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'napi-row';
+            rowDiv.innerHTML = `
+                <span class="napi-number"></span>
+                <input type="text" list="listDataNapi" class="select-napi" placeholder="Ketik atau pilih nama tahanan...">
+                <button class="btn-remove-napi" onclick="this.parentElement.remove(); updateNapiRowNumbers();" title="Hapus baris ini">X</button>
+            `;
+            container.appendChild(rowDiv);
+            updateNapiRowNumbers();
+        }
+
+        function resetNapiRows() {
+            const container = document.getElementById('napiContainer');
+            container.innerHTML = `
+                <div class="napi-row">
+                    <span class="napi-number">1.</span>
+                    <input type="text" list="listDataNapi" class="select-napi" placeholder="Ketik atau pilih nama tahanan...">
+                </div>
+            `;
+        }
+
+        function setRole(role) {
+            currentRole = role;
+            if(role === 'Pemohon') {
+                document.getElementById('userInfo').innerText = `Mode: Dashboard Pemohon`;
+                document.getElementById('formRequestDiv').classList.remove('hidden');
+            } else {
+                document.getElementById('userInfo').innerText = `Mode Viewer: ${role}`;
+                document.getElementById('formRequestDiv').classList.add('hidden');
+            }
+            renderTables();
+        }
+
+        function buatRequest() {
+            // Validasi Pemohon (Login)
+            const user = document.getElementById('reqUsername').value.toLowerCase().trim();
+            const pass = document.getElementById('reqPassword').value;
+
+            if (!authStaff[user] || authStaff[user] !== pass) {
+                alert("Otentikasi Gagal: Username atau Password Pemohon salah!");
+                return;
+            }
+            
+            const staffNameValidated = user.charAt(0).toUpperCase() + user.slice(1);
+            const keperluanInput = document.getElementById('inputKeperluan').value.trim();
+            const selectEls = document.querySelectorAll('.select-napi');
+            let selectedNapis = [];
+            let isAdaNamaSalah = false;
+
+            selectEls.forEach(el => { 
+                const nilaiInput = el.value.trim();
+                if (nilaiInput !== "") {
+                    if (daftarNapi.includes(nilaiInput)) {
+                        selectedNapis.push(nilaiInput);
+                    } else {
+                        isAdaNamaSalah = true;
+                    }
+                }
+            });
+
+            if (isAdaNamaSalah) {
+                alert("ERROR: Ada nama tahanan yang diketik tidak sesuai dengan database.");
+                return;
+            }
+
+            selectedNapis = [...new Set(selectedNapis)]; 
+
+            if(selectedNapis.length === 0) { alert("Input minimal 1 tahanan!"); return; }
+            if(!keperluanInput) { alert("Isi keperluan terlebih dahulu!"); return; }
+
+            selectedNapis.forEach((napi, index) => {
+                const newReq = {
+                    id: Date.now() + index,
+                    namaStaff: staffNameValidated,
+                    napi: napi,
+                    keperluan: keperluanInput,
+                    shift: getShift(),
+                    waktuRequest: new Date().toISOString(),
+                    accKarupam: false,
+                    namaKarupam: null,
+                    waktuKeluar: null,
+                    accKPLP: false,
+                    waktuMengetahui: null, 
+                    waktuKembali: null,
+                    status: 'Antrean'
+                };
+                requests.push(newReq);
+            });
+
+            saveData();
+            
+            // Reset input form
+            document.getElementById('reqUsername').value = '';
+            document.getElementById('reqPassword').value = '';
+            document.getElementById('inputKeperluan').value = '';
+            resetNapiRows(); 
+            
+            alert(`${selectedNapis.length} Tahanan berhasil diajukan oleh ${staffNameValidated}.`);
+            renderTables();
+        }
+
+        function hapusRequest(id) { // Dipakai oleh Karupam & KPLP
+            if (!confirm("Yakin ingin menghapus / membatalkan request bon ini?")) return; 
+            requests = requests.filter(r => r.id !== id);
+            saveData();
+            renderTables();
+        }
+
+        function kembalikanTahanan(id) { // Dipakai oleh Karupam & KPLP
+            if (!confirm("Sudahkah Anda yakin mengembalikan tahanan ini ke blok?")) return; 
+            const req = requests.find(r => r.id === id);
+            if(req) {
+                req.status = 'Selesai';
+                req.waktuKembali = new Date().toISOString();
+                saveData();
+                renderTables();
+            }
+        }
+
+        // FUNGSI UNTUK AKSI PEMOHON DENGAN MODAL
+        function openModalPemohonAction(id, action) {
+            currentActionId = id;
+            pemohonActionType = action;
+            document.getElementById('actionPemohonUser').value = '';
+            document.getElementById('actionPemohonPass').value = '';
+            document.getElementById('pemohonActionTitle').innerText = action === 'hapus' ? 'Hapus/Batal Bon' : 'Kembalikan Tahanan';
+            document.getElementById('modalPemohonAction').style.display = 'flex';
+        }
+
+        function submitPemohonAction() {
+            const user = document.getElementById('actionPemohonUser').value.toLowerCase().trim();
+            const pass = document.getElementById('actionPemohonPass').value;
+            const req = requests.find(r => r.id === currentActionId);
+            
+            if (authStaff[user] && authStaff[user] === pass) {
+                const staffNameValidated = user.charAt(0).toUpperCase() + user.slice(1);
+                
+                if (req.namaStaff !== staffNameValidated) {
+                    alert(`Akses Ditolak! Bon ini diajukan oleh ${req.namaStaff}, bukan oleh ${staffNameValidated}.`);
+                    return;
+                }
+                
+                if (pemohonActionType === 'hapus') {
+                    if (!confirm("Yakin ingin membatalkan bon ini?")) return;
+                    requests = requests.filter(r => r.id !== currentActionId);
+                } else if (pemohonActionType === 'kembali') {
+                    if (!confirm("Sudahkah Anda yakin mengembalikan tahanan ini ke blok?")) return;
+                    req.status = 'Selesai';
+                    req.waktuKembali = new Date().toISOString();
+                }
+
+                saveData();
+                renderTables();
+                closeModal('modalPemohonAction');
+            } else {
+                alert("Username atau Password Salah!");
+            }
+        }
+
+        function toggleCustomKarupam() {
+            const selectVal = document.getElementById('selectNamaKarupam').value;
+            const divCustom = document.getElementById('divCustomKarupam');
+            
+            if (selectVal === 'Pengganti') {
+                divCustom.classList.remove('hidden');
+            } else {
+                divCustom.classList.add('hidden');
+            }
+        }
+
+        function openModalKarupam(id) {
+            currentActionId = id;
+            document.getElementById('inputPwKarupam').value = '';
+            document.getElementById('selectNamaKarupam').value = 'Aji';
+            document.getElementById('inputNamaCustomKarupam').value = '';
+            document.getElementById('divCustomKarupam').classList.add('hidden');
+            document.getElementById('modalKarupam').style.display = 'flex';
+        }
+
+        function openModalKPLP(id) {
+            currentActionId = id;
+            document.getElementById('inputPwKPLP').value = '';
+            document.getElementById('modalKPLP').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            currentActionId = null;
+        }
+
+        function submitKarupam() {
+            const opsiTerpilih = document.getElementById('selectNamaKarupam').value;
+            const pwInput = document.getElementById('inputPwKarupam').value;
+            
+            let namaValidFinal = "";
+            let isOtentikasiSukses = false;
+
+            if (opsiTerpilih === 'Pengganti') {
+                const namaCustom = document.getElementById('inputNamaCustomKarupam').value.trim();
+                if (!namaCustom) {
+                    alert("Nama Karupam Pengganti tidak boleh kosong!");
+                    return;
+                }
+                if (pwInput === "1") {
+                    isOtentikasiSukses = true;
+                    namaValidFinal = namaCustom + " (Pengganti)";
+                }
+            } 
+            else {
+                if (authKarupam[opsiTerpilih] === pwInput) {
+                    isOtentikasiSukses = true;
+                    namaValidFinal = opsiTerpilih;
+                }
+            }
+
+            if (isOtentikasiSukses) {
+                const req = requests.find(r => r.id === currentActionId);
+                if(req) {
+                    req.accKarupam = true;
+                    req.namaKarupam = namaValidFinal;
+                    req.status = 'Sedang Keluar';
+                    req.waktuKeluar = new Date().toISOString();
+                    saveData();
+                    renderTables();
+                    closeModal('modalKarupam');
+                }
+            } else {
+                alert("Password Salah!");
+            }
+        }
+
+        function submitKPLP() {
+            const pwInput = document.getElementById('inputPwKPLP').value;
+            if (pwInput === authKPLP) {
+                const req = requests.find(r => r.id === currentActionId);
+                if(req) {
+                    req.accKPLP = true;
+                    req.waktuMengetahui = new Date().toISOString(); 
+                    saveData();
+                    renderTables();
+                    closeModal('modalKPLP');
+                }
+            } else {
+                alert("Password KPLP Salah!");
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('dataRequests', JSON.stringify(requests));
+        }
+
+        function renderTables() {
+            const tbodyAktif = document.querySelector('#tableAktif tbody');
+            const tbodyHistory = document.querySelector('#tableHistory tbody');
+            
+            tbodyAktif.innerHTML = '';
+            tbodyHistory.innerHTML = '';
+
+            let noAktif = 1;
+            let noHistory = 1;
+
+            requests.slice().reverse().forEach(req => {
+                
+                let labelKarupam = req.accKarupam 
+                    ? `<span class="badge bg-accent">Dikeluarkan</span><br><small style="display:inline-block; margin-top:5px; color:#555; line-height:1.4;">Dikeluarkan oleh: <b>${req.namaKarupam}</b> pada<br>${formatDetailTime(req.waktuKeluar, true)}</small>` 
+                    : `<span class="badge bg-warning">Menunggu ACC</span>`;
+                
+                let labelKPLP = req.accKPLP 
+                    ? `<span class="badge bg-success">Mengetahui</span><br><small style="display:inline-block; margin-top:5px; color:#555; line-height:1.4;">Diketahui pada pukul<br>${formatDetailTime(req.waktuMengetahui, true)}</small>` 
+                    : `<span class="badge bg-warning">Belum Dicek</span>`;
+
+                let btnAksi = '';
+                
+                if (req.status !== 'Selesai') {
+                    if (currentRole === 'Pemohon') {
+                        if (!req.accKarupam) {
+                            btnAksi += `<button class="btn-action bg-dark" onclick="openModalPemohonAction(${req.id}, 'hapus')">Hapus/Batal</button>`;
+                        } else if (req.status === 'Sedang Keluar') {
+                            btnAksi += `<button class="btn-action bg-danger" onclick="openModalPemohonAction(${req.id}, 'kembali')">Kembalikan Narapidana ke Sel</button>`;
+                        }
+                    } 
+                    else if (currentRole === 'Karupam') {
+                        if (!req.accKarupam) {
+                            btnAksi += `<button class="btn-action bg-accent" onclick="openModalKarupam(${req.id})">ACC Keluar</button>`;
+                            btnAksi += `<button class="btn-action bg-dark" onclick="hapusRequest(${req.id})">Hapus/Batal</button>`;
+                        } else if (req.status === 'Sedang Keluar') {
+                            btnAksi += `<button class="btn-action bg-danger" onclick="kembalikanTahanan(${req.id})">Kembalikan Narapidana ke Sel</button>`;
+                        }
+                    } 
+                    else if (currentRole === 'KPLP') {
+                        if (!req.accKPLP) {
+                            btnAksi += `<button class="btn-action bg-success" onclick="openModalKPLP(${req.id})">Mengetahui</button>`;
+                        }
+                        if (!req.accKarupam) {
+                            btnAksi += `<button class="btn-action bg-dark" onclick="hapusRequest(${req.id})">Hapus/Batal</button>`;
+                        }
+                        if (req.accKarupam && req.status === 'Sedang Keluar') {
+                            btnAksi += `<button class="btn-action bg-danger" onclick="kembalikanTahanan(${req.id})">Kembalikan Narapidana ke Sel</button>`;
+                        }
+                    }
+                }
+
+                if (btnAksi === '') btnAksi = '-';
+
+                const rowHtml = `
+                    <tr style="text-align: center;">
+                        <td>${noHistory}</td>
+                        <td>${getJustDate(req.waktuRequest)}</td>
+                        <td>${getJustTime(req.waktuRequest)}</td>
+                        <td style="text-align: left;">${req.napi}</td>
+                        <td>${req.namaStaff}</td>
+                        <td>${req.keperluan}</td>
+                        <td>${req.shift}</td>
+                        <td>${labelKarupam}</td>
+                        <td>${labelKPLP}</td>
+                        <td>${getJustDate(req.waktuKeluar)}</td>
+                        <td>${getJustTime(req.waktuKeluar)}</td>
+                        <td>${getJustDate(req.waktuKembali)}</td>
+                        <td>${getJustTime(req.waktuKembali)}</td>
+                        <td><span class="badge bg-success">Sudah kembali kedalam Blok</span></td>
+                    </tr>
+                `;
+
+                const rowAktifHtml = `
+                    <tr style="text-align: center;">
+                        <td>${noAktif}</td>
+                        <td>${getJustDate(req.waktuRequest)}</td>
+                        <td>${getJustTime(req.waktuRequest)}</td>
+                        <td style="text-align: left;">${req.napi}</td>
+                        <td>${req.namaStaff}</td>
+                        <td>${req.keperluan}</td>
+                        <td>${req.shift}</td>
+                        <td>${labelKarupam}</td>
+                        <td>${labelKPLP}</td>
+                        <td>${btnAksi}</td>
+                    </tr>
+                `;
+
+                if(req.status === 'Selesai') {
+                    tbodyHistory.innerHTML += rowHtml; 
+                    noHistory++;
+                } else {
+                    tbodyAktif.innerHTML += rowAktifHtml;
+                    noAktif++;
+                }
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
