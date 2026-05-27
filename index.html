@@ -55,33 +55,17 @@
             overflow-x: auto;
         }
         
-        /* LOGIN PAGE STYLES */
-        #loginPage {
-            max-width: 400px;
-            margin: 100px auto;
-            text-align: center;
-        }
-        .login-box {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .login-box input {
-            width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box;
-        }
-        .login-box button {
-            width: 100%; background-color: var(--accent); color: white; border: none; padding: 12px;
-            border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;
-        }
-        .login-box p { font-size: 13px; color: #7f8c8d; }
-
         /* FORM STYLES */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: bold; }
         .form-group select, .form-group input {
             width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box;
         }
+        
+        .login-section {
+            background-color: #e8f4f8; padding: 20px; border-radius: 6px; border-left: 4px solid var(--accent);
+        }
+        .login-section input { width: 250px; display: inline-block; margin-right: 10px;}
         
         /* DYNAMIC NAPI ROW STYLES */
         .napi-row {
@@ -103,8 +87,8 @@
         .btn-add-napi:hover { background-color: #e0e6ed; }
 
         button.btn-submit {
-            background-color: var(--accent); color: white; border: none; padding: 12px 20px;
-            border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px;
+            background-color: var(--accent); color: white; border: none; padding: 10px 20px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px;
         }
         
         /* TABLE STYLES */
@@ -125,7 +109,6 @@
             padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; margin: 2px; font-size: 12px; display: block; width: 100%; text-align: center; box-sizing: border-box;
         }
         .hidden { display: none !important; }
-        .btn-logout { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;}
 
         /* MODAL STYLES */
         .modal-overlay {
@@ -143,31 +126,19 @@
 </head>
 <body>
 
-    <div id="loginPage">
-        <div class="login-box">
-            <h2>Login Staff UPT</h2>
-            <p>Silakan login untuk meminjam/mengebon tahanan.</p>
-            <input type="text" id="loginUsername" placeholder="Username (wisnu / sidik)">
-            <input type="password" id="loginPassword" placeholder="Password (1)">
-            <button onclick="prosesLogin()">Masuk</button>
-            <p>*Gunakan dummy akun: <b>wisnu</b> (pw: 1) atau <b>sidik</b> (pw: 1)</p>
-        </div>
-    </div>
-
-    <div id="mainApp" class="hidden">
+    <div id="mainApp">
 
         <div class="simulator-nav">
-            Simulasi Tampilan Layar (Role): 
-            <button onclick="setRole('Staff')">Layar Staff</button>
-            <button onclick="setRole('Karupam')">Layar Karupam</button>
-            <button onclick="setRole('KPLP')">Layar KPLP</button>
+            Pilih Peran: 
+            <button onclick="setRole('Pemohon')">Pemohon</button>
+            <button onclick="setRole('Karupam')">Karupam</button>
+            <button onclick="setRole('KPLP')">KPLP</button>
         </div>
 
         <div class="header">
             <h2>Sistem Informasi Pengeluaran Bon Narapidana</h2>
             <div>
-                <span id="userInfo">Login: -</span> 
-                <button class="btn-logout" onclick="logout()">Logout</button> | 
+                <span id="userInfo">Mode: Dashboard Pemohon</span> | 
                 <span id="shiftInfo">Shift: Pagi</span>
             </div>
         </div>
@@ -177,24 +148,46 @@
             <datalist id="listDataNapi"></datalist>
 
             <div class="card" id="formRequestDiv">
-                <h3>Buat Bon (Request) Baru</h3>
                 
-                <div class="form-group">
-                    <label>Ketik & Pilih Tahanan:</label>
-                    <div id="napiContainer">
-                        <div class="napi-row">
-                            <span class="napi-number">1.</span>
-                            <input type="text" list="listDataNapi" class="select-napi" placeholder="Ketik atau pilih nama tahanan...">
-                        </div>
+                <!-- Bagian Login Pemohon -->
+                <div id="sectionLoginPemohon" class="login-section">
+                    <h3 style="margin-top: 0;">Login Pemohon</h3>
+                    <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Silakan login terlebih dahulu untuk mulai membuat pengajuan bon tahanan.</p>
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <input type="text" id="reqUsername" placeholder="Username (contoh: wisnu / sidik)" required>
+                        <input type="password" id="reqPassword" placeholder="Password (contoh: 1)" required>
+                        <button class="btn-submit" onclick="loginPemohon()">Masuk / Login</button>
                     </div>
-                    <button class="btn-add-napi" onclick="addNapiRow()">+ Tambah Tahanan</button>
                 </div>
 
-                <div class="form-group">
-                    <label>Keperluan / Tujuan:</label>
-                    <input type="text" id="inputKeperluan" placeholder="Contoh: Sidang, Kebersihan Blok, dll" required>
+                <!-- Bagian Form Buat Bon (Muncul setelah login) -->
+                <div id="sectionBuatBon" class="hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ecf0f1; padding-bottom: 15px; margin-bottom: 20px;">
+                        <h3 style="margin: 0;">Buat Bon (Request) Baru</h3>
+                        <div style="background: #f1c40f; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">
+                            Login sebagai: <span id="displayNamaPemohon" style="color: #2c3e50; margin-right: 10px;"></span>
+                            <button onclick="logoutPemohon()" style="background: #e74c3c; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">Logout</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ketik & Pilih Tahanan:</label>
+                        <div id="napiContainer">
+                            <div class="napi-row">
+                                <span class="napi-number">1.</span>
+                                <input type="text" list="listDataNapi" class="select-napi" placeholder="Ketik atau pilih nama tahanan...">
+                            </div>
+                        </div>
+                        <button class="btn-add-napi" onclick="addNapiRow()">+ Tambah Tahanan</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Keperluan / Tujuan:</label>
+                        <input type="text" id="inputKeperluan" placeholder="Contoh: Sidang, Kebersihan Blok, dll" required>
+                    </div>
+                    <button class="btn-submit" style="width: 100%; padding: 15px;" onclick="buatRequest()">Kirim Bon</button>
                 </div>
-                <button class="btn-submit" onclick="buatRequest()">Kirim Bon</button>
+
             </div>
 
             <div class="card">
@@ -246,6 +239,7 @@
         </div>
     </div>
 
+    <!-- MODAL OTENTIKASI KARUPAM -->
     <div class="modal-overlay" id="modalKarupam">
         <div class="modal-box">
             <h3>Otentikasi Karupam</h3>
@@ -278,6 +272,7 @@
         </div>
     </div>
 
+    <!-- MODAL OTENTIKASI KPLP -->
     <div class="modal-overlay" id="modalKPLP">
         <div class="modal-box">
             <h3>Otentikasi KPLP</h3>
@@ -308,8 +303,8 @@
         const authKarupam = { "Aji": "r1", "Badru": "r2", "Cece": "r3", "Dadang": "r4" };
         const authKPLP = "kp";
 
-        let currentRole = 'Staff';
-        let loggedInStaffName = ''; 
+        let currentRole = 'Pemohon';
+        let loggedInPemohonName = ''; 
         let requests = JSON.parse(localStorage.getItem('dataRequests')) || [];
         let currentActionId = null;
 
@@ -356,11 +351,15 @@
 
         function init() {
             document.getElementById('listDataNapi').innerHTML = napiOptionsHTML;
-            const sessionData = localStorage.getItem('activeStaffSession');
+            document.getElementById('shiftInfo').innerText = 'Shift: ' + getShift();
+            
+            // Cek apakah ada sesi pemohon sebelumnya
+            const sessionData = localStorage.getItem('activePemohonSession');
             if (sessionData) {
-                loggedInStaffName = sessionData;
-                showMainApp();
+                loggedInPemohonName = sessionData;
             }
+            
+            setRole('Pemohon');
         }
 
         function updateNapiRowNumbers() {
@@ -393,53 +392,56 @@
             `;
         }
 
-        function prosesLogin() {
-            const user = document.getElementById('loginUsername').value.toLowerCase().trim();
-            const pass = document.getElementById('loginPassword').value;
-
-            if (authStaff[user] && authStaff[user] === pass) {
-                loggedInStaffName = user.charAt(0).toUpperCase() + user.slice(1);
-                localStorage.setItem('activeStaffSession', loggedInStaffName);
-                showMainApp();
-            } else {
-                alert("Username atau Password salah!");
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('activeStaffSession');
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            loggedInStaffName = '';
-            document.getElementById('loginPage').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-        }
-
-        function showMainApp() {
-            document.getElementById('loginPage').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('shiftInfo').innerText = 'Shift: ' + getShift();
-            setRole('Staff'); 
-        }
-
         function setRole(role) {
             currentRole = role;
-            if(role === 'Staff') {
-                document.getElementById('userInfo').innerText = `Login Staff: ${loggedInStaffName}`;
-            } else {
-                document.getElementById('userInfo').innerText = `Mode Viewer: ${role}`;
-            }
             updateUIByRole();
             renderTables();
         }
 
         function updateUIByRole() {
             const formDiv = document.getElementById('formRequestDiv');
-            if (currentRole === 'Staff') {
+            const sectionLogin = document.getElementById('sectionLoginPemohon');
+            const sectionBuat = document.getElementById('sectionBuatBon');
+
+            if (currentRole === 'Pemohon') {
+                document.getElementById('userInfo').innerText = `Mode: Dashboard Pemohon`;
                 formDiv.classList.remove('hidden');
+                
+                if (loggedInPemohonName !== '') {
+                    sectionLogin.classList.add('hidden');
+                    sectionBuat.classList.remove('hidden');
+                    document.getElementById('displayNamaPemohon').innerText = loggedInPemohonName.toUpperCase();
+                } else {
+                    sectionLogin.classList.remove('hidden');
+                    sectionBuat.classList.add('hidden');
+                }
             } else {
+                document.getElementById('userInfo').innerText = `Mode Viewer: ${currentRole}`;
                 formDiv.classList.add('hidden');
             }
+        }
+
+        function loginPemohon() {
+            const user = document.getElementById('reqUsername').value.toLowerCase().trim();
+            const pass = document.getElementById('reqPassword').value;
+
+            if (authStaff[user] && authStaff[user] === pass) {
+                loggedInPemohonName = user.charAt(0).toUpperCase() + user.slice(1);
+                localStorage.setItem('activePemohonSession', loggedInPemohonName);
+                document.getElementById('reqUsername').value = '';
+                document.getElementById('reqPassword').value = '';
+                updateUIByRole();
+                renderTables();
+            } else {
+                alert("Login Gagal: Username atau Password salah!");
+            }
+        }
+
+        function logoutPemohon() {
+            loggedInPemohonName = '';
+            localStorage.removeItem('activePemohonSession');
+            updateUIByRole();
+            renderTables();
         }
 
         function buatRequest() {
@@ -460,7 +462,7 @@
             });
 
             if (isAdaNamaSalah) {
-                alert("ERROR: Ada nama tahanan yang diketik tidak sesuai dengan database. Mohon pastikan memilih nama dari daftar rekomendasi yang muncul.");
+                alert("ERROR: Ada nama tahanan yang diketik tidak sesuai dengan database.");
                 return;
             }
 
@@ -472,7 +474,7 @@
             selectedNapis.forEach((napi, index) => {
                 const newReq = {
                     id: Date.now() + index,
-                    namaStaff: loggedInStaffName,
+                    namaStaff: loggedInPemohonName, // Menggunakan nama yang sudah login
                     napi: napi,
                     keperluan: keperluanInput,
                     shift: getShift(),
@@ -492,15 +494,41 @@
             document.getElementById('inputKeperluan').value = '';
             resetNapiRows(); 
             
-            alert(`${selectedNapis.length} Tahanan berhasil diajukan.`);
+            alert(`${selectedNapis.length} Tahanan berhasil diajukan oleh ${loggedInPemohonName}.`);
             renderTables();
         }
 
         function hapusRequest(id) {
+            const req = requests.find(r => r.id === id);
+            
+            // Validasi ekstra jika dipanggil dari layar Pemohon
+            if (currentRole === 'Pemohon' && req.namaStaff !== loggedInPemohonName) {
+                alert("Akses Ditolak! Anda hanya bisa menghapus bon yang Anda ajukan sendiri.");
+                return;
+            }
+
             if (!confirm("Yakin ingin menghapus / membatalkan request bon ini?")) return; 
             requests = requests.filter(r => r.id !== id);
             saveData();
             renderTables();
+        }
+
+        function kembalikanTahanan(id) {
+            const req = requests.find(r => r.id === id);
+            
+            // Validasi ekstra jika dipanggil dari layar Pemohon
+            if (currentRole === 'Pemohon' && req.namaStaff !== loggedInPemohonName) {
+                alert("Akses Ditolak! Anda hanya bisa mengembalikan tahanan dari bon yang Anda ajukan sendiri.");
+                return;
+            }
+
+            if (!confirm("Sudahkah Anda yakin mengembalikan tahanan ini ke blok?")) return; 
+            if(req) {
+                req.status = 'Selesai';
+                req.waktuKembali = new Date().toISOString();
+                saveData();
+                renderTables();
+            }
         }
 
         function toggleCustomKarupam() {
@@ -591,22 +619,6 @@
             }
         }
 
-        function kembalikanTahanan(id) {
-            if (!confirm("Sudahkah Anda yakin mengembalikan tahanan ini ke blok?")) return; 
-
-            const req = requests.find(r => r.id === id);
-            if(req) {
-                if (currentRole === 'Staff' && req.namaStaff !== loggedInStaffName) {
-                    alert(`Maaf, tahanan ini dibon oleh ${req.namaStaff}. Hanya ${req.namaStaff}, Karupam, atau KPLP yang bisa mengembalikannya.`);
-                    return;
-                }
-                req.status = 'Selesai';
-                req.waktuKembali = new Date().toISOString();
-                saveData();
-                renderTables();
-            }
-        }
-
         function saveData() {
             localStorage.setItem('dataRequests', JSON.stringify(requests));
         }
@@ -634,17 +646,16 @@
                 let btnAksi = '';
                 
                 if (req.status !== 'Selesai') {
-                    if (currentRole === 'Staff') {
-                        if (!req.accKarupam) {
-                            if (req.namaStaff === loggedInStaffName) {
+                    if (currentRole === 'Pemohon') {
+                        // Jika ada pemohon yang login dan nama pembuat bon cocok, tampilkan tombol aksinya
+                        if (loggedInPemohonName !== '' && req.namaStaff === loggedInPemohonName) {
+                            if (!req.accKarupam) {
                                 btnAksi += `<button class="btn-action bg-dark" onclick="hapusRequest(${req.id})">Hapus/Batal</button>`;
-                            }
-                        } else if (req.status === 'Sedang Keluar') {
-                            if (req.namaStaff === loggedInStaffName) {
+                            } else if (req.status === 'Sedang Keluar') {
                                 btnAksi += `<button class="btn-action bg-danger" onclick="kembalikanTahanan(${req.id})">Kembalikan Narapidana ke Sel</button>`;
-                            } else {
-                                btnAksi += `<small style="color:red">Dibon oleh ${req.namaStaff}</small>`;
                             }
+                        } else if (req.status === 'Sedang Keluar' && req.namaStaff !== loggedInPemohonName) {
+                            btnAksi += `<small style="color:red">Dibon oleh ${req.namaStaff}</small>`;
                         }
                     } 
                     else if (currentRole === 'Karupam') {
@@ -714,6 +725,7 @@
             });
         }
 
+        // Jalankan inisialisasi awal
         init();
     </script>
 </body>
